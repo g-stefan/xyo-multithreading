@@ -1,0 +1,115 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe /c build.cmd",
+			},
+			"linux": {
+				"command": "/bin/sh -- build.sh",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Test",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe /c build.cmd test",
+			},
+			"linux": {
+				"command": "/bin/sh -- build.sh test",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			]
+		},
+		{
+			"label": "Analyze",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe /c build.cmd analyze",
+			},
+			"linux": {
+				"command": "/bin/sh -- build.sh analyze",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			]
+		},
+		{
+			"label": "Clean",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe /c build.cmd clean",
+			},
+			"linux": {
+				"command": "/bin/sh -- build.sh clean",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			]
+		},
+		{
+			"label": "Install",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe /c build.cmd install",
+			},
+			"linux": {
+				"command": "/bin/sh -- build.sh install",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			]
+		},
+		{
+			"label": "Version",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe /c build.cmd version",
+			},
+			"linux": {
+				"command": "/bin/sh -- build.sh version",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			]
+		},
+		{
+			"label": "Build documentation",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe /c mkdocs build",
+			},
+			"linux": {
+				"command": "/bin/sh -- mkdocs build",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			]
+		},
+		{
+			"label": "Check license",
+			"type": "shell",
+			"windows": {
+				"command": "ubuntu2004.exe -c 'reuse lint'",
+			},
+			"linux": {
+				"command": "/bin/sh -- reuse lint",
+			},
+			"problemMatcher": [
+				"$msCompile", "$gcc"
+			]
+		}
+	]
+}
