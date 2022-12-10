@@ -16,7 +16,6 @@ namespace XYO::Multithreading::Copyright {
 	XYO_MULTITHREADING_EXPORT const char *publisher();
 	XYO_MULTITHREADING_EXPORT const char *company();
 	XYO_MULTITHREADING_EXPORT const char *contact();
-	XYO_MULTITHREADING_EXPORT const char *fullCopyright();
 };
 
 #endif

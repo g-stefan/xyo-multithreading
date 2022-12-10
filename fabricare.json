@@ -1,7 +1,7 @@
 {
 	"project": {
 		"name":"xyo-multithreading",
-		"type":"xyo-cpp-project",
+		"type":"xyo-cpp",
 		"make" : "lib-and-dll",
 		"SPDX-License-Identifier": "MIT",
 		"sourcePath" : "XYO/Multithreading",

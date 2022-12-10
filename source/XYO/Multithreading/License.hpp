@@ -13,8 +13,7 @@
 
 namespace XYO::Multithreading::License {
 
-	XYO_MULTITHREADING_EXPORT const char *licenseHeader();
-	XYO_MULTITHREADING_EXPORT const char *licenseBody();
+	XYO_MULTITHREADING_EXPORT const char *license();
 	XYO_MULTITHREADING_EXPORT const char *shortLicense();
 
 };
