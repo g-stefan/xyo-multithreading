@@ -1,17 +1,21 @@
 {
-	"project": {
-		"name":"xyo-multithreading",
-		"type":"xyo-cpp",
-		"make" : "lib-and-dll",
-		"SPDX-License-Identifier": "MIT",
-		"sourcePath" : "XYO/Multithreading",
-		"testSource" : [
-			"test.01"
+	"solution": {
+		"name" : "xyo-multithreading",
+		"type" : "xyo-cpp",
+		"projects": [
+			{
+				"name" : "xyo-multithreading",
+				"make" : "lib-and-dll",
+				"SPDX-License-Identifier": "MIT",
+				"sourcePath" : "XYO/Multithreading",
+				"testSource" : [
+					"test.01"
+				],
+				"dependency" : [
+					"xyo-data-structures"
+				]
+			}
 		],
-		"dependency" : [
-			"xyo-data-structures"
-		],
-		"hasRelease" : true,
-		"githubRelease" : true
+		"hasGithub" : true
 	}
 }
