@@ -5,7 +5,7 @@ Source: https://github.com/g-stefan/xyo-managed-memory
 License: MIT
 
 Files: .github/*
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: .github/CODE_OF_CONDUCT.md
@@ -13,49 +13,49 @@ Copyright: 2014 Coraline Ada Ehmke <https://where.coraline.codes/>
 License: CC-BY-4.0
 
 Files: .gitignore
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: .clang-format
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: .vscode/*
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: mkdocs.yml
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: fabricare/*
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: fabricare.json
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: README.md
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: MIT
 
 Files: output/*
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: MIT
 
 Files: source/*
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: MIT
 
 Files: test/*
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
 
 Files: temp/*
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: MIT
 
 Files: version.json
-Copyright: Grigore Stefan <g_stefan@yahoo.com>
+Copyright: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 License: Unlicense
