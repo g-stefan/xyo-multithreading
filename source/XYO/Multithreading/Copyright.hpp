@@ -12,10 +12,10 @@
 #endif
 
 namespace XYO::Multithreading::Copyright {
-	XYO_MULTITHREADING_EXPORT std::string copyright();
-	XYO_MULTITHREADING_EXPORT std::string publisher();
-	XYO_MULTITHREADING_EXPORT std::string company();
-	XYO_MULTITHREADING_EXPORT std::string contact();
+	XYO_MULTITHREADING_EXPORT const char *copyright();
+	XYO_MULTITHREADING_EXPORT const char *publisher();
+	XYO_MULTITHREADING_EXPORT const char *company();
+	XYO_MULTITHREADING_EXPORT const char *contact();
 };
 
 #endif
