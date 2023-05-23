@@ -15,8 +15,11 @@
 #	ifdef XYO_SINGLE_THREAD
 namespace XYO::Multithreading {
 
-	void Thread::sleep(int milliSeconds) {
-		usleep(milliSeconds * 1000);
+	void Thread::sleep(int milliSeconds) {		
+		struct timespec _sleep;
+		sleep.tv_sec = milliSeconds/1000;
+		sleep.tv_nsec = (milliSeconds%1000)*1000000;
+		while(nanosleep(&_sleep, &_sleep)){};
 	};
 
 };
@@ -84,7 +87,10 @@ namespace XYO::Multithreading {
 	};
 
 	void Thread::sleep(int milliSeconds) {
-		usleep(milliSeconds * 1000);
+		struct timespec _sleep;
+		sleep.tv_sec = milliSeconds/1000;
+		sleep.tv_nsec = (milliSeconds%1000)*1000000;
+		while(nanosleep(&_sleep, &_sleep)){};
 	};
 
 };
