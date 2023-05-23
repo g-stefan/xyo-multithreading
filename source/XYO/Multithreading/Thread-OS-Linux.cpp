@@ -11,6 +11,7 @@
 
 #	include <pthread.h>
 #	include <unistd.h>
+#	include <time.h>
 
 #	ifdef XYO_SINGLE_THREAD
 namespace XYO::Multithreading {
