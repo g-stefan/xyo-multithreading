@@ -15,7 +15,6 @@
 // -
 
 #include <XYO/Multithreading/Thread.hpp>
-#include <XYO/Multithreading/Processor.hpp>
 #include <XYO/Multithreading/Semaphore.hpp>
 #include <XYO/Multithreading/Transfer.hpp>
 #include <XYO/Multithreading/Worker.hpp>

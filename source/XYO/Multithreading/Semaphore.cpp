@@ -7,7 +7,7 @@
 #include <XYO/Multithreading/Thread.hpp>
 #include <XYO/Multithreading/Semaphore.hpp>
 
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 
 namespace XYO::Multithreading {
 

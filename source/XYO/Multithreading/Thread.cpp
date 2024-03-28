@@ -7,9 +7,41 @@
 #include <XYO/Multithreading/Dependency.hpp>
 #include <XYO/Multithreading/Thread.hpp>
 
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_SINGLE_THREAD
+namespace XYO::Multithreading::Thread {
+
+	void sleep(int milliSeconds) {
+		XYO::Platform::Multithreading::Thread::sleep(milliSeconds);
+	};
+
+};
+#endif
+
+#ifdef XYO_PLATFORM_MULTI_THREAD
 
 namespace XYO::Multithreading {
+
+	Thread::Thread(){};
+
+	Thread::~Thread(){};
+
+	void Thread::join() {
+		thread.join();
+	};
+
+	bool Thread::start(ThreadProcedure procedure, void *this_) {
+		return thread.start(procedure, this_, RegistryThread::threadBegin, RegistryThread::threadEnd);
+	};
+
+	bool Thread::isRunning() {
+		return thread.isRunning();
+	};
+
+	void Thread::sleep(int milliSeconds) {
+		Platform::Multithreading::Thread::sleep(milliSeconds);
+	};
+
+	// ---
 
 	class ThreadTimeout : public Object {
 		public:
@@ -44,6 +76,8 @@ namespace XYO::Multithreading {
 		return nullptr;
 	};
 
+	// ---
+
 	class ThreadInterval : public Object {
 		public:
 			ThreadProcedure procedure;
@@ -61,7 +95,7 @@ namespace XYO::Multithreading {
 		this_->decReferenceCount();
 	};
 
-	TPointer<Thread> Thread::setInterval(TAtomic<bool> &clearInterval, int milliSeconds, ThreadProcedure procedure, void *this_) {
+	TPointer<Thread> Thread::setInterval(Platform::Multithreading::TAtomic<bool> &clearInterval, int milliSeconds, ThreadProcedure procedure, void *this_) {
 		TPointer<ThreadInterval> threadInterval(TMemorySystem<ThreadInterval>::newMemory());
 		TPointer<Thread> thread;
 
@@ -80,6 +114,8 @@ namespace XYO::Multithreading {
 
 		return nullptr;
 	};
+
+	// ---
 
 	class ThreadFinish : public Object {
 		public:
@@ -116,6 +152,8 @@ namespace XYO::Multithreading {
 		return nullptr;
 	};
 
+	// ---
+
 	static void onIntervalActionFirstProcedure(void *this__) {
 		ThreadInterval *this_ = reinterpret_cast<ThreadInterval *>(this__);
 		while (this_->clearInterval->get() == false) {
@@ -125,7 +163,7 @@ namespace XYO::Multithreading {
 		this_->decReferenceCount();
 	};
 
-	TPointer<Thread> Thread::setIntervalActionFirst(TAtomic<bool> &clearInterval, int milliSeconds, ThreadProcedure procedure, void *this_) {
+	TPointer<Thread> Thread::setIntervalActionFirst(Platform::Multithreading::TAtomic<bool> &clearInterval, int milliSeconds, ThreadProcedure procedure, void *this_) {
 		TPointer<ThreadInterval> threadInterval(TMemorySystem<ThreadInterval>::newMemory());
 		TPointer<Thread> thread;
 

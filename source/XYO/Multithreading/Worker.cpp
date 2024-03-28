@@ -6,7 +6,7 @@
 
 #include <XYO/Multithreading/Worker.hpp>
 
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 
 namespace XYO::Multithreading {
 

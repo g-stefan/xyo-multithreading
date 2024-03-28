@@ -33,10 +33,10 @@ namespace XYO::Multithreading {
 		return TStaticCast<Object *>(FunctionT(TStaticCast<ParameterT *>(parameter), requestToTerminate));
 	};
 
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 
 	class Worker : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(Worker);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(Worker);
 
 		protected:
 			class Worker_ *worker;

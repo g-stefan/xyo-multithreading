@@ -32,10 +32,10 @@ namespace XYO::Multithreading {
 		return TStaticCast<Object *>(FunctionT(*(static_cast<T *>(this_))));
 	};
 
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 
 	class Transfer : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(Transfer);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(Transfer);
 
 		protected:
 			Transfer *thread1;

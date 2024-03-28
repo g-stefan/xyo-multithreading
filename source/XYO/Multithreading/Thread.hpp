@@ -11,31 +11,27 @@
 #	include <XYO/Multithreading/Dependency.hpp>
 #endif
 
-#ifdef XYO_SINGLE_THREAD
+#ifdef XYO_PLATFORM_SINGLE_THREAD
 
-namespace XYO::Multithreading {
+namespace XYO::Multithreading::Thread {
 
-	struct Thread {
-			XYO_MULTITHREADING_EXPORT static void sleep(int milliSeconds);
-	};
+	XYO_MULTITHREADING_EXPORT static void sleep(int milliSeconds);
 
 };
 
 #endif
 
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 
 namespace XYO::Multithreading {
 
-	typedef void (*ThreadProcedure)(void *);
-
-	class Thread_;
+	typedef Platform::Multithreading::ThreadProcedure ThreadProcedure;
 
 	class Thread : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(Thread);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(Thread);
 
 		protected:
-			class Thread_ *thread;
+			Platform::Multithreading::Thread thread;
 
 		public:
 			XYO_MULTITHREADING_EXPORT Thread();

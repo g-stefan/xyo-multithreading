@@ -14,9 +14,9 @@
 // -- Export
 
 #ifdef XYO_MULTITHREADING_INTERNAL
-#	define XYO_MULTITHREADING_EXPORT XYO_LIBRARY_EXPORT
+#	define XYO_MULTITHREADING_EXPORT XYO_PLATFORM_LIBRARY_EXPORT
 #else
-#	define XYO_MULTITHREADING_EXPORT XYO_LIBRARY_IMPORT
+#	define XYO_MULTITHREADING_EXPORT XYO_PLATFORM_LIBRARY_IMPORT
 #endif
 
 // --
@@ -24,6 +24,10 @@
 namespace XYO::Multithreading {
 	using namespace XYO::ManagedMemory;
 	using namespace XYO::DataStructures;
+
+	using Platform::Multithreading::CriticalSection;
+	using Platform::Multithreading::TAtomic;
+	namespace Processor = Platform::Multithreading::Processor;
 };
 
 #endif

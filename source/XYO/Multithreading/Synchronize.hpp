@@ -16,7 +16,7 @@ namespace XYO::Multithreading {
 	template <typename T>
 	class Synchronize {
 		public:
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 			static inline T process(CriticalSection &criticalSection, const std::function<T()> &fn) {
 				T retV;
 				criticalSection.enter();
@@ -30,7 +30,7 @@ namespace XYO::Multithreading {
 				return retV;
 			};
 #endif
-#ifdef XYO_SINGLE_THREAD
+#ifdef XYO_PLATFORM_SINGLE_THREAD
 			static inline T process(CriticalSection &, const std::function<T()> &fn) {
 				return fn();
 			};
@@ -40,7 +40,7 @@ namespace XYO::Multithreading {
 	template <>
 	class Synchronize<void> {
 		public:
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 			static inline void process(CriticalSection &criticalSection, const std::function<void()> &fn) {
 				criticalSection.enter();
 				try {
@@ -52,7 +52,7 @@ namespace XYO::Multithreading {
 				criticalSection.leave();
 			};
 #endif
-#ifdef XYO_SINGLE_THREAD
+#ifdef XYO_PLATFORM_SINGLE_THREAD
 			static inline void process(CriticalSection &, const std::function<void()> &fn) {
 				fn();
 			};

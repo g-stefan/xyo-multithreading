@@ -18,34 +18,34 @@
 namespace XYO::Multithreading {
 
 	class WorkerQueueNode : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(WorkerQueueNode);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(WorkerQueueNode);
 
 		public:
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 			Worker worker;
 			bool started;
 #endif
-#ifdef XYO_SINGLE_THREAD
+#ifdef XYO_PLATFORM_SINGLE_THREAD
 			TPointer<Object> returnValue;
 			WorkerProcedure workerProcedure;
 #endif
 			TPointer<Object> parameter;
 
 			inline WorkerQueueNode() {
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 				started = false;
 #endif
-#ifdef XYO_SINGLE_THREAD
+#ifdef XYO_PLATFORM_SINGLE_THREAD
 				workerProcedure = nullptr;
 #endif
 			};
 
 			inline void activeDestructor() {
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 				worker.endWork();
 				started = false;
 #endif
-#ifdef XYO_SINGLE_THREAD
+#ifdef XYO_PLATFORM_SINGLE_THREAD
 				returnValue.deleteMemory();
 				workerProcedure = nullptr;
 #endif
@@ -54,7 +54,7 @@ namespace XYO::Multithreading {
 	};
 
 	class WorkerQueue : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(WorkerQueue);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(WorkerQueue);
 
 		protected:
 			int numberOfThreads;

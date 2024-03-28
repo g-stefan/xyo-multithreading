@@ -11,11 +11,7 @@
 
 // -
 
-#include <XYO/Multithreading/Thread-OS-Linux.cpp>
-#include <XYO/Multithreading/Thread-OS-Windows.cpp>
 #include <XYO/Multithreading/Thread.cpp>
-#include <XYO/Multithreading/Processor-OS-Linux.cpp>
-#include <XYO/Multithreading/Processor-OS-Windows.cpp>
 #include <XYO/Multithreading/Transfer.cpp>
 #include <XYO/Multithreading/Semaphore.cpp>
 #include <XYO/Multithreading/Worker.cpp>

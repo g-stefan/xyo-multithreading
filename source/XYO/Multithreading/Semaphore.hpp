@@ -11,12 +11,12 @@
 #	include <XYO/Multithreading/Dependency.hpp>
 #endif
 
-#ifdef XYO_MULTI_THREAD
+#ifdef XYO_PLATFORM_MULTI_THREAD
 
 namespace XYO::Multithreading {
 
 	class Semaphore {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(Semaphore);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(Semaphore);
 
 		protected:
 			TAtomic<bool> state;
