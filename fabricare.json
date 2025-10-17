@@ -13,6 +13,21 @@
 				]
 			},
 			{
+				"name": "xyo-multithreading.static",
+				"make": "lib",
+				"category": "make",
+				"SPDX-License-Identifier": "MIT",
+				"sourcePath" : "XYO/Multithreading",
+				"dependency" : [
+					"xyo-data-structures.static"
+				],
+				"dependencyDefines" : [
+					"XYO_MULTITHREADING_LIBRARY"
+				],
+				"linkVersion": "xyo-multithreading",
+				"crt": "static"
+			},
+			{
 				"name" : "test.01",
 				"make" : "exe",
 				"category" : "test",
