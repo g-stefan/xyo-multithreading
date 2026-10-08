@@ -11,53 +11,31 @@
 #	include <XYO/Multithreading/Dependency.hpp>
 #endif
 
+#ifndef XYO_MULTITHREADING_CRITICALSECTIONLOCK_HPP
+#	include <XYO/Multithreading/CriticalSectionLock.hpp>
+#endif
+
 namespace XYO::Multithreading {
 
+	//
+	// Call fn() with criticalSection entered, return its value.
+	// T can be any return type: void, a reference, a type without
+	// default constructor. fn is any callable (lambda, function,
+	// std::function), called directly, no std::function conversion.
+	//
+	//   int value = Synchronize<int>::process(criticalSection, [&]() {
+	//       return ++counter;
+	//   });
+	//
 	template <typename T>
-	class Synchronize {
-		public:
-#ifdef XYO_PLATFORM_MULTI_THREAD
-			static inline T process(CriticalSection &criticalSection, const std::function<T()> &fn) {
-				T retV;
-				criticalSection.enter();
-				try {
-					retV = fn();
-				} catch (...) {
-					criticalSection.leave();
-					throw;
-				}
-				criticalSection.leave();
-				return retV;
-			};
-#endif
-#ifdef XYO_PLATFORM_SINGLE_THREAD
-			static inline T process(CriticalSection &, const std::function<T()> &fn) {
+	struct Synchronize {
+			template <typename F>
+			static inline T process(CriticalSection &criticalSection, F &&fn) {
+				CriticalSectionLock lock(criticalSection);
 				return fn();
 			};
-#endif
 	};
 
-	template <>
-	class Synchronize<void> {
-		public:
-#ifdef XYO_PLATFORM_MULTI_THREAD
-			static inline void process(CriticalSection &criticalSection, const std::function<void()> &fn) {
-				criticalSection.enter();
-				try {
-					fn();
-				} catch (...) {
-					criticalSection.leave();
-					throw;
-				}
-				criticalSection.leave();
-			};
-#endif
-#ifdef XYO_PLATFORM_SINGLE_THREAD
-			static inline void process(CriticalSection &, const std::function<void()> &fn) {
-				fn();
-			};
-#endif
-	};
 };
 
 #endif

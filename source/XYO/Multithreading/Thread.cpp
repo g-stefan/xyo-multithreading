@@ -6,6 +6,9 @@
 
 #include <XYO/Multithreading/Dependency.hpp>
 #include <XYO/Multithreading/Thread.hpp>
+#include <XYO/Multithreading/CriticalSectionLock.hpp>
+
+#include <chrono>
 
 #ifdef XYO_PLATFORM_SINGLE_THREAD
 namespace XYO::Multithreading::Thread {
@@ -21,20 +24,75 @@ namespace XYO::Multithreading::Thread {
 
 namespace XYO::Multithreading {
 
-	Thread::Thread(){};
+	Thread::Thread() {
+		procedure = nullptr;
+		procedureThis = nullptr;
+		isFinished = true;
+	};
 
-	Thread::~Thread(){};
+	// Join here, the thread procedure uses finishSection / finishCondition,
+	// members destroyed before the thread member (it would join too late)
+	Thread::~Thread() {
+		thread.join();
+	};
 
 	void Thread::join() {
 		thread.join();
 	};
 
-	bool Thread::start(ThreadProcedure procedure, void *this_) {
-		return thread.start(procedure, this_, RegistryThread::threadBegin, RegistryThread::threadEnd);
+	// Marks the end of the thread procedure, also when it throws
+	class ThreadFinish_ {
+		public:
+			CriticalSection &finishSection;
+			ConditionVariable &finishCondition;
+			bool &isFinished;
+
+			ThreadFinish_(CriticalSection &finishSection_, ConditionVariable &finishCondition_, bool &isFinished_)
+			    : finishSection(finishSection_), finishCondition(finishCondition_), isFinished(isFinished_){};
+
+			~ThreadFinish_() {
+				CriticalSectionLock lock(finishSection);
+				isFinished = true;
+				finishCondition.notifyAll();
+			};
+	};
+
+	void Thread::threadProcedure(void *this__) {
+		Thread *this_ = reinterpret_cast<Thread *>(this__);
+		ThreadFinish_ finish(this_->finishSection, this_->finishCondition, this_->isFinished);
+		(*this_->procedure)(this_->procedureThis);
+	};
+
+	bool Thread::start(ThreadProcedure procedure_, void *this_) {
+		// previous run must end first, it would mark the new run finished
+		thread.join();
+
+		procedure = procedure_;
+		procedureThis = this_;
+		{
+			CriticalSectionLock lock(finishSection);
+			isFinished = false;
+		};
+
+		if (thread.start(threadProcedure, this, RegistryThread::threadBegin, RegistryThread::threadEnd)) {
+			return true;
+		};
+
+		CriticalSectionLock lock(finishSection);
+		isFinished = true;
+		finishCondition.notifyAll();
+		return false;
 	};
 
 	bool Thread::isRunning() {
 		return thread.isRunning();
+	};
+
+	void Thread::waitFinish() {
+		CriticalSectionLock lock(finishSection);
+		while (!isFinished) {
+			finishCondition.wait(finishSection);
+		};
 	};
 
 	void Thread::sleep(int milliSeconds) {
@@ -42,6 +100,8 @@ namespace XYO::Multithreading {
 	};
 
 	// ---
+	// Object reference count is not atomic, the thread procedure is the only
+	// owner of the thread data, the caller must not access it after start().
 
 	class ThreadTimeout : public Object {
 		public:
@@ -51,27 +111,26 @@ namespace XYO::Multithreading {
 	};
 
 	static void onTimeoutProcedure(void *this__) {
-		ThreadTimeout *this_ = reinterpret_cast<ThreadTimeout *>(this__);
+		TPointer<ThreadTimeout> this_(reinterpret_cast<ThreadTimeout *>(this__));
 		Thread::sleep(this_->milliSeconds);
 		(*this_->procedure)(this_->this_);
-		this_->decReferenceCount();
 	};
 
 	TPointer<Thread> Thread::onTimeout(int milliSeconds, ThreadProcedure procedure, void *this_) {
-		TPointer<ThreadTimeout> threadTimeout(TMemorySystem<ThreadTimeout>::newMemory());
 		TPointer<Thread> thread;
+		ThreadTimeout *threadTimeout;
 
 		thread.newMemory();
 
+		threadTimeout = TMemorySystem<ThreadTimeout>::newMemory();
 		threadTimeout->procedure = procedure;
 		threadTimeout->this_ = this_;
 		threadTimeout->milliSeconds = milliSeconds;
 
-		threadTimeout->incReferenceCount();
 		if (thread->start(onTimeoutProcedure, threadTimeout)) {
 			return thread;
 		};
-		threadTimeout->decReferenceCount();
+		TMemorySystem<ThreadTimeout>::deleteMemory(threadTimeout);
 
 		return nullptr;
 	};
@@ -86,31 +145,54 @@ namespace XYO::Multithreading {
 			TAtomic<bool> *clearInterval;
 	};
 
+	// Wait milliSeconds or until interval is cleared,
+	// return false if interval is cleared
+	static bool waitInterval(TAtomic<bool> *clearInterval, int milliSeconds) {
+		// short sleeps, stop soon after clear
+		const int slice = 10;
+
+		if (milliSeconds <= 0) {
+			Thread::sleep(milliSeconds);
+			return !clearInterval->get();
+		};
+
+		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now() + std::chrono::milliseconds(milliSeconds);
+		for (;;) {
+			if (clearInterval->get()) {
+				return false;
+			};
+			std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+			if (now >= end) {
+				return true;
+			};
+			int remaining = (int)std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
+			Thread::sleep(remaining < slice ? remaining : slice);
+		};
+	};
+
 	static void onIntervalProcedure(void *this__) {
-		ThreadInterval *this_ = reinterpret_cast<ThreadInterval *>(this__);
-		while (this_->clearInterval->get() == false) {
-			Thread::sleep(this_->milliSeconds);
+		TPointer<ThreadInterval> this_(reinterpret_cast<ThreadInterval *>(this__));
+		while (waitInterval(this_->clearInterval, this_->milliSeconds)) {
 			(*this_->procedure)(this_->this_);
 		};
-		this_->decReferenceCount();
 	};
 
 	TPointer<Thread> Thread::setInterval(Platform::Multithreading::TAtomic<bool> &clearInterval, int milliSeconds, ThreadProcedure procedure, void *this_) {
-		TPointer<ThreadInterval> threadInterval(TMemorySystem<ThreadInterval>::newMemory());
 		TPointer<Thread> thread;
+		ThreadInterval *threadInterval;
 
 		thread.newMemory();
 
+		threadInterval = TMemorySystem<ThreadInterval>::newMemory();
 		threadInterval->procedure = procedure;
 		threadInterval->this_ = this_;
 		threadInterval->milliSeconds = milliSeconds;
 		threadInterval->clearInterval = &clearInterval;
 
-		threadInterval->incReferenceCount();
 		if (thread->start(onIntervalProcedure, threadInterval)) {
 			return thread;
 		};
-		threadInterval->decReferenceCount();
+		TMemorySystem<ThreadInterval>::deleteMemory(threadInterval);
 
 		return nullptr;
 	};
@@ -125,29 +207,26 @@ namespace XYO::Multithreading {
 	};
 
 	static void onFinishProcedure(void *this__) {
-		ThreadFinish *this_ = reinterpret_cast<ThreadFinish *>(this__);
-		while (this_->thread->isRunning()) {
-			Thread::sleep(1);
-		};
+		TPointer<ThreadFinish> this_(reinterpret_cast<ThreadFinish *>(this__));
+		this_->thread->waitFinish();
 		(*this_->procedure)(this_->this_);
-		this_->decReferenceCount();
 	};
 
 	TPointer<Thread> Thread::onFinish(Thread &thread_, ThreadProcedure procedure, void *this_) {
-		TPointer<ThreadFinish> threadFinish(TMemorySystem<ThreadFinish>::newMemory());
 		TPointer<Thread> thread;
+		ThreadFinish *threadFinish;
 
 		thread.newMemory();
 
+		threadFinish = TMemorySystem<ThreadFinish>::newMemory();
 		threadFinish->procedure = procedure;
 		threadFinish->this_ = this_;
 		threadFinish->thread = &thread_;
 
-		threadFinish->incReferenceCount();
 		if (thread->start(onFinishProcedure, threadFinish)) {
 			return thread;
 		};
-		threadFinish->decReferenceCount();
+		TMemorySystem<ThreadFinish>::deleteMemory(threadFinish);
 
 		return nullptr;
 	};
@@ -155,32 +234,86 @@ namespace XYO::Multithreading {
 	// ---
 
 	static void onIntervalActionFirstProcedure(void *this__) {
-		ThreadInterval *this_ = reinterpret_cast<ThreadInterval *>(this__);
+		TPointer<ThreadInterval> this_(reinterpret_cast<ThreadInterval *>(this__));
 		while (this_->clearInterval->get() == false) {
 			(*this_->procedure)(this_->this_);
-			Thread::sleep(this_->milliSeconds);
+			waitInterval(this_->clearInterval, this_->milliSeconds);
 		};
-		this_->decReferenceCount();
 	};
 
 	TPointer<Thread> Thread::setIntervalActionFirst(Platform::Multithreading::TAtomic<bool> &clearInterval, int milliSeconds, ThreadProcedure procedure, void *this_) {
-		TPointer<ThreadInterval> threadInterval(TMemorySystem<ThreadInterval>::newMemory());
 		TPointer<Thread> thread;
+		ThreadInterval *threadInterval;
 
 		thread.newMemory();
 
+		threadInterval = TMemorySystem<ThreadInterval>::newMemory();
 		threadInterval->procedure = procedure;
 		threadInterval->this_ = this_;
 		threadInterval->milliSeconds = milliSeconds;
 		threadInterval->clearInterval = &clearInterval;
 
-		threadInterval->incReferenceCount();
 		if (thread->start(onIntervalActionFirstProcedure, threadInterval)) {
 			return thread;
 		};
-		threadInterval->decReferenceCount();
+		TMemorySystem<ThreadInterval>::deleteMemory(threadInterval);
 
 		return nullptr;
+	};
+
+	// --- IntervalControl, clear() wakes the waiting thread
+
+	class ThreadIntervalControl : public Object {
+		public:
+			ThreadProcedure procedure;
+			void *this_;
+			int milliSeconds;
+			IntervalControl *control;
+	};
+
+	static void onIntervalControlProcedure(void *this__) {
+		TPointer<ThreadIntervalControl> this_(reinterpret_cast<ThreadIntervalControl *>(this__));
+		while (this_->control->waitFor(this_->milliSeconds)) {
+			(*this_->procedure)(this_->this_);
+		};
+	};
+
+	static void onIntervalControlActionFirstProcedure(void *this__) {
+		TPointer<ThreadIntervalControl> this_(reinterpret_cast<ThreadIntervalControl *>(this__));
+		while (!this_->control->isCleared()) {
+			(*this_->procedure)(this_->this_);
+			if (!this_->control->waitFor(this_->milliSeconds)) {
+				break;
+			};
+		};
+	};
+
+	static TPointer<Thread> startIntervalControl(ThreadProcedure threadProcedure, IntervalControl &control, int milliSeconds, ThreadProcedure procedure, void *this_) {
+		TPointer<Thread> thread;
+		ThreadIntervalControl *threadInterval;
+
+		thread.newMemory();
+
+		threadInterval = TMemorySystem<ThreadIntervalControl>::newMemory();
+		threadInterval->procedure = procedure;
+		threadInterval->this_ = this_;
+		threadInterval->milliSeconds = milliSeconds;
+		threadInterval->control = &control;
+
+		if (thread->start(threadProcedure, threadInterval)) {
+			return thread;
+		};
+		TMemorySystem<ThreadIntervalControl>::deleteMemory(threadInterval);
+
+		return nullptr;
+	};
+
+	TPointer<Thread> Thread::setInterval(IntervalControl &control, int milliSeconds, ThreadProcedure procedure, void *this_) {
+		return startIntervalControl(onIntervalControlProcedure, control, milliSeconds, procedure, this_);
+	};
+
+	TPointer<Thread> Thread::setIntervalActionFirst(IntervalControl &control, int milliSeconds, ThreadProcedure procedure, void *this_) {
+		return startIntervalControl(onIntervalControlActionFirstProcedure, control, milliSeconds, procedure, this_);
 	};
 };
 

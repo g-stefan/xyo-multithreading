@@ -30,6 +30,9 @@ namespace XYO::Multithreading {
 	using namespace XYO::DataStructures;
 
 	using Platform::Multithreading::CriticalSection;
+#ifdef XYO_PLATFORM_MULTI_THREAD
+	using Platform::Multithreading::ConditionVariable;
+#endif
 	using Platform::Multithreading::TAtomic;
 	namespace Processor = Platform::Multithreading::Processor;
 };

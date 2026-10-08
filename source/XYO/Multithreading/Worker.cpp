@@ -13,7 +13,11 @@ namespace XYO::Multithreading {
 	class Worker_ {
 		public:
 			Thread thread;
+			// owner side
 			Transfer transfer;
+			// worker thread side, linked to transfer; kept here, not on the
+			// worker thread stack, transfer reads it after the thread ends
+			Transfer transferThread;
 			WorkerProcedure workerProcedure;
 			TransferProcedure transferParameter;
 			TransferProcedure transferReturnValue;
@@ -21,7 +25,9 @@ namespace XYO::Multithreading {
 			TAtomic<bool> requestToTerminateWorker;
 			TPointer<Object> returnValue;
 			TAtomic<bool> workEnd;
-			TAtomic<bool> startedOk;
+			// worker thread is running and linked, notified by the worker thread
+			Semaphore threadStarted;
+			TAtomic<bool> failed;
 	};
 
 	Worker::Worker() {
@@ -32,7 +38,7 @@ namespace XYO::Multithreading {
 		worker->requestToTerminateSuper.set(false);
 		worker->requestToTerminateWorker.set(false);
 		worker->workEnd.set(true);
-		worker->startedOk.set(false);
+		worker->failed.set(false);
 	};
 
 	Worker::~Worker() {
@@ -52,51 +58,67 @@ namespace XYO::Multithreading {
 		worker->transferReturnValue = transferReturnValue_;
 	};
 
+	void Worker::setNotify(Semaphore *notify) {
+		worker->transfer.setNotify(notify);
+	};
+
 	static void workerThreadProcedure(void *this__) {
 		Worker_ *worker = reinterpret_cast<Worker_ *>(this__);
-		Transfer transfer;
+		Transfer &transfer(worker->transferThread);
+		transfer.link(nullptr);
 		transfer.link(&worker->transfer);
 		TPointer<Object> parameter;
-		worker->startedOk.set(true);
+		worker->threadStarted.notify();
+		// sleeps in waitValue() until the owner posts work (set())
+		// or requests to terminate (endWork(), notifyPeer())
 		while (!worker->requestToTerminateSuper.get()) {
 			if (transfer.hasValue()) {
 				worker->workEnd.set(false);
-				parameter = transfer.get(worker->transferParameter);
-				transfer.set((*worker->workerProcedure)(parameter, worker->requestToTerminateWorker));
+				// A failed job has no return value, the thread must survive
+				// to mark workEnd, otherwise join() will wait forever
+				try {
+					parameter = transfer.get(worker->transferParameter);
+					transfer.set((*worker->workerProcedure)(parameter, worker->requestToTerminateWorker));
+				} catch (...) {
+					worker->failed.set(true);
+				};
 				worker->requestToTerminateWorker.set(false);
 				worker->workEnd.set(true);
+				// wake the owner from join(), also when there is no result
+				transfer.notifyPeer();
 				continue;
 			};
-			Thread::sleep(1);
+			transfer.waitValue();
 		};
 	};
 
 	bool Worker::beginWork() {
 		if (worker->thread.start(workerThreadProcedure, worker)) {
-			while (!worker->startedOk.get()) {
-				Thread::sleep(1);
-			};
+			worker->threadStarted.wait();
 			return true;
 		};
 		return false;
 	};
 
+	// Stop worker thread, keep procedures, start() can be used again
 	void Worker::endWork() {
 		worker->requestToTerminateWorker.set(true);
 		worker->requestToTerminateSuper.set(true);
+		// wake the worker thread if it waits for work, to see the request
+		worker->transfer.notifyPeer();
 		join();
 		worker->thread.join();
-		worker->workerProcedure = nullptr;
-		worker->transferParameter = nullptr;
-		worker->transferReturnValue = nullptr;
 		worker->requestToTerminateSuper.set(false);
 		worker->requestToTerminateWorker.set(false);
 		worker->workEnd.set(true);
-		worker->startedOk.set(false);
+		worker->threadStarted.reset();
 		worker->transfer.link(nullptr);
 	};
 
 	bool Worker::start(Object *parameter) {
+		if (!worker->workerProcedure) {
+			return false;
+		};
 		if (!worker->thread.isRunning()) {
 			if (!beginWork()) {
 				return false;
@@ -104,20 +126,34 @@ namespace XYO::Multithreading {
 		};
 		join();
 		worker->returnValue.deleteMemory();
+		worker->failed.set(false);
 		worker->transfer.set(parameter);
 		return true;
 	};
 
+	// Woken by the worker thread when the result is posted and when the
+	// work ends; isRunning() takes the result
 	void Worker::join() {
 		while (isRunning()) {
-			Thread::sleep(1);
+			worker->transfer.waitValue();
+		};
+	};
+
+	// Called from endWork() and so from destructors, must not throw,
+	// a failed return value transfer is reported as no return value
+	static void fetchReturnValue(Worker_ *worker) {
+		if (worker->transfer.hasValue()) {
+			try {
+				worker->returnValue = worker->transfer.get(worker->transferReturnValue);
+			} catch (...) {
+				worker->returnValue.deleteMemory();
+				worker->failed.set(true);
+			};
 		};
 	};
 
 	bool Worker::isRunning() {
-		if (worker->transfer.hasValue()) {
-			worker->returnValue = worker->transfer.get(worker->transferReturnValue);
-		};
+		fetchReturnValue(worker);
 		return (!worker->workEnd.get());
 	};
 
@@ -126,10 +162,25 @@ namespace XYO::Multithreading {
 	};
 
 	TPointer<Object> Worker::getReturnValue() {
-		if (worker->transfer.hasValue()) {
-			worker->returnValue = worker->transfer.get(worker->transferReturnValue);
-		};
+		fetchReturnValue(worker);
 		return worker->returnValue;
+	};
+
+	bool Worker::hasFailed() {
+		fetchReturnValue(worker);
+		return worker->failed.get();
+	};
+
+	// endWork() keeps procedures and last result,
+	// a recycled Worker must not keep them
+	void Worker::activeDestructor() {
+		endWork();
+		worker->workerProcedure = nullptr;
+		worker->transferParameter = nullptr;
+		worker->transferReturnValue = nullptr;
+		worker->transfer.setNotify(nullptr);
+		worker->returnValue.deleteMemory();
+		worker->failed.set(false);
 	};
 
 };

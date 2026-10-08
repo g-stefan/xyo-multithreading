@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2016-2026 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
-#include <XYO/Multithreading/Semaphore.hpp>
+#include <XYO/Multithreading/IntervalControl.hpp>
 #include <XYO/Multithreading/CriticalSectionLock.hpp>
 
 #include <chrono>
@@ -13,28 +13,32 @@
 
 namespace XYO::Multithreading {
 
-	// One reader / one writer, see Semaphore.hpp
-	//
-	// state is changed by notify() with criticalSection entered, the waiting
-	// thread tests it with criticalSection entered, so a notify() can not
-	// happen between the test and the wait (no lost wake up).
-	// exchange() tests and clears in one step.
-
-	Semaphore::Semaphore() {
-		state.set(false);
+	IntervalControl::IntervalControl() {
+		cleared.set(false);
 	};
 
-	void Semaphore::wait() {
+	// Set with criticalSection entered: a waiting thread tests cleared with
+	// criticalSection entered, the clear can not happen between its test
+	// and its wait
+	void IntervalControl::clear() {
 		CriticalSectionLock lock(criticalSection);
-		while (!state.exchange(false)) {
-			conditionVariable.wait(criticalSection);
-		};
+		cleared.set(true);
+		conditionVariable.notifyAll();
 	};
 
-	bool Semaphore::waitFor(int milliSeconds) {
+	bool IntervalControl::isCleared() const {
+		return cleared.get();
+	};
+
+	void IntervalControl::reset() {
 		CriticalSectionLock lock(criticalSection);
-		if (state.exchange(false)) {
-			return true;
+		cleared.set(false);
+	};
+
+	bool IntervalControl::waitFor(int milliSeconds) {
+		CriticalSectionLock lock(criticalSection);
+		if (cleared.get()) {
+			return false;
 		};
 
 		// a wait can return early without notify, wait again the remaining time
@@ -42,29 +46,15 @@ namespace XYO::Multithreading {
 		for (;;) {
 			std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 			if (now >= end) {
-				return state.exchange(false);
+				return !cleared.get();
 			};
 			// round up, do not return before end
 			int remaining = (int)std::chrono::duration_cast<std::chrono::milliseconds>(end - now + std::chrono::microseconds(999)).count();
 			conditionVariable.waitFor(criticalSection, remaining);
-			if (state.exchange(false)) {
-				return true;
+			if (cleared.get()) {
+				return false;
 			};
 		};
-	};
-
-	void Semaphore::notify() {
-		CriticalSectionLock lock(criticalSection);
-		state.set(true);
-		conditionVariable.notifyOne();
-	};
-
-	bool Semaphore::peek() const {
-		return state.get();
-	};
-
-	void Semaphore::reset() {
-		state.set(false);
 	};
 
 };

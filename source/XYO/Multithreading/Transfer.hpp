@@ -34,6 +34,21 @@ namespace XYO::Multithreading {
 
 #ifdef XYO_PLATFORM_MULTI_THREAD
 
+	//
+	// Two linked Transfer objects, one used by each thread, pass objects
+	// between the two threads (a.link(&b)):
+	// - set() posts a value to the other side, wakes it, then waits until
+	//   the other side took it with get()
+	// - get() takes the posted value, copied by transferProcedure in the
+	//   calling thread, and releases the other side
+	// - hasValue() true if the other side posted a value
+	// - waitValue() sleeps until the other side posts a value or calls
+	//   notifyPeer(), check hasValue() after, it can return without a value
+	// - notifyPeer() wakes the other side from waitValue()
+	// - setNotify() an extra semaphore notified with the own waitValue()
+	//   signal, for one thread waiting on several Transfer objects;
+	//   kept by link(), must outlive the link
+	//
 	class Transfer : public Object {
 			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(Transfer);
 
@@ -46,6 +61,11 @@ namespace XYO::Multithreading {
 			TAtomic<bool> hasValue2;
 			Semaphore sync1;
 			Semaphore sync2;
+			// notified by the other side: value posted or notifyPeer()
+			Semaphore valueSignal;
+			Semaphore *notify;
+
+			void signalValue();
 
 		public:
 			XYO_MULTITHREADING_EXPORT Transfer();
@@ -54,6 +74,9 @@ namespace XYO::Multithreading {
 			XYO_MULTITHREADING_EXPORT void set(Object *value_);
 			XYO_MULTITHREADING_EXPORT TPointer<Object> get(TransferProcedure transferProc);
 			XYO_MULTITHREADING_EXPORT bool hasValue();
+			XYO_MULTITHREADING_EXPORT void waitValue();
+			XYO_MULTITHREADING_EXPORT void notifyPeer();
+			XYO_MULTITHREADING_EXPORT void setNotify(Semaphore *notify_);
 	};
 
 #endif

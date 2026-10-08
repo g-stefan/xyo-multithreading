@@ -11,6 +11,7 @@
 
 // -
 
+#include <XYO/Multithreading/IntervalControl.cpp>
 #include <XYO/Multithreading/Thread.cpp>
 #include <XYO/Multithreading/Transfer.cpp>
 #include <XYO/Multithreading/Semaphore.cpp>

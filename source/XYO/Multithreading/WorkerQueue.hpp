@@ -17,49 +17,103 @@
 
 namespace XYO::Multithreading {
 
+	// A work of the queue, its result is kept here after the work ends
 	class WorkerQueueNode : public Object {
 			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(WorkerQueueNode);
 
 		public:
-#ifdef XYO_PLATFORM_MULTI_THREAD
-			Worker worker;
-			bool started;
-#endif
-#ifdef XYO_PLATFORM_SINGLE_THREAD
-			TPointer<Object> returnValue;
 			WorkerProcedure workerProcedure;
+#ifdef XYO_PLATFORM_MULTI_THREAD
+			TransferProcedure transferParameter;
+			TransferProcedure transferReturnValue;
 #endif
 			TPointer<Object> parameter;
+			TPointer<Object> returnValue;
+			// started - given to a thread, done - ended,
+			// failed - thrown an exception (no return value)
+			bool started;
+			bool done;
+			bool failed;
 
 			inline WorkerQueueNode() {
-#ifdef XYO_PLATFORM_MULTI_THREAD
-				started = false;
-#endif
-#ifdef XYO_PLATFORM_SINGLE_THREAD
 				workerProcedure = nullptr;
+#ifdef XYO_PLATFORM_MULTI_THREAD
+				transferParameter = nullptr;
+				transferReturnValue = nullptr;
 #endif
+				started = false;
+				done = false;
+				failed = false;
 			};
 
 			inline void activeDestructor() {
-#ifdef XYO_PLATFORM_MULTI_THREAD
-				worker.endWork();
-				started = false;
-#endif
-#ifdef XYO_PLATFORM_SINGLE_THREAD
-				returnValue.deleteMemory();
 				workerProcedure = nullptr;
+#ifdef XYO_PLATFORM_MULTI_THREAD
+				transferParameter = nullptr;
+				transferReturnValue = nullptr;
 #endif
 				parameter.deleteMemory();
+				returnValue.deleteMemory();
+				started = false;
+				done = false;
+				failed = false;
 			};
 	};
 
+#ifdef XYO_PLATFORM_MULTI_THREAD
+
+	// A thread of the WorkerQueue pool, runs one work at a time
+	class WorkerQueueThread : public Object {
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(WorkerQueueThread);
+
+		public:
+			Worker worker;
+			size_t node;
+			bool isBusy;
+
+			inline WorkerQueueThread() {
+				node = 0;
+				isBusy = false;
+			};
+
+			inline void activeDestructor() {
+				worker.activeDestructor();
+				node = 0;
+				isBusy = false;
+			};
+	};
+
+#endif
+
+	//
+	// Run the added work on a pool of up to numberOfThreads threads, on
+	// process(). Each thread runs one work after another, threads are
+	// started by process() and ended when all work is done.
+	// The destructor waits for started work to end, work not started
+	// (process() not called or failed) is not done.
+	// Return value and failed state of each work: getReturnValue(index),
+	// hasFailed(index).
+	//
 	class WorkerQueue : public Object {
 			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(WorkerQueue);
 
 		protected:
 			int numberOfThreads;
+#ifdef XYO_PLATFORM_MULTI_THREAD
+			// notified by the pool threads when a return value is posted or a
+			// work ends, process() waits on it; declared before pool,
+			// destroyed after the threads
+			Semaphore workerSignal;
+			TDynamicArray<WorkerQueueThread> pool;
+#endif
 			TDynamicArray<WorkerQueueNode> queue;
+			// next work to start
+			size_t nextNode;
 			bool allDone;
+
+#ifdef XYO_PLATFORM_MULTI_THREAD
+			void endPool();
+#endif
 
 		public:
 			XYO_MULTITHREADING_EXPORT WorkerQueue();
@@ -72,6 +126,7 @@ namespace XYO::Multithreading {
 			XYO_MULTITHREADING_EXPORT int getNumberOfThreads();
 			XYO_MULTITHREADING_EXPORT bool process();
 			XYO_MULTITHREADING_EXPORT TPointer<Object> getReturnValue(size_t index);
+			XYO_MULTITHREADING_EXPORT bool hasFailed(size_t index);
 			XYO_MULTITHREADING_EXPORT void setParameter(size_t index, Object *parameter);
 			XYO_MULTITHREADING_EXPORT void reset();
 			XYO_MULTITHREADING_EXPORT WorkerQueueNode &index(size_t index);

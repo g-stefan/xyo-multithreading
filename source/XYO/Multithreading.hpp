@@ -14,11 +14,13 @@
 
 // -
 
+#include <XYO/Multithreading/IntervalControl.hpp>
 #include <XYO/Multithreading/Thread.hpp>
 #include <XYO/Multithreading/Semaphore.hpp>
 #include <XYO/Multithreading/Transfer.hpp>
 #include <XYO/Multithreading/Worker.hpp>
 #include <XYO/Multithreading/WorkerQueue.hpp>
+#include <XYO/Multithreading/CriticalSectionLock.hpp>
 #include <XYO/Multithreading/Synchronize.hpp>
 
 #endif

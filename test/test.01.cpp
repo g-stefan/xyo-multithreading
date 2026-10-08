@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2016-2026 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: Unlicense
 
-#include <XYO/MultiThreading.hpp>
+#include <XYO/Multithreading.hpp>
 
 using namespace XYO::Multithreading;
 
@@ -89,7 +89,7 @@ void test() {
 		ProcessQueue::add(queue, parameter);
 	};
 
-	printf("Queue length: %zd\r\n", queue.length());
+	printf("Queue length: %zu\r\n", queue.length());
 	printf("Queue threads: %d\r\n", queue.getNumberOfThreads());
 
 	TAtomic<bool> endRefresh = false;

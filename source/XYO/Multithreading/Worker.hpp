@@ -47,6 +47,10 @@ namespace XYO::Multithreading {
 			XYO_MULTITHREADING_EXPORT void setProcedure(WorkerProcedure workerProcedure_);
 			XYO_MULTITHREADING_EXPORT void setTransferParameter(TransferProcedure transferParameter_);
 			XYO_MULTITHREADING_EXPORT void setTransferReturnValue(TransferProcedure transferReturnValue_);
+			// Extra semaphore notified when the return value is posted and when
+			// the work ends, for one thread waiting on several workers
+			// (WorkerQueue); must outlive the worker thread, kept by endWork()
+			XYO_MULTITHREADING_EXPORT void setNotify(Semaphore *notify);
 
 			XYO_MULTITHREADING_EXPORT bool beginWork();
 			XYO_MULTITHREADING_EXPORT void endWork();
@@ -56,10 +60,12 @@ namespace XYO::Multithreading {
 			XYO_MULTITHREADING_EXPORT bool isRunning();
 			XYO_MULTITHREADING_EXPORT void requestToTerminate();
 			XYO_MULTITHREADING_EXPORT TPointer<Object> getReturnValue();
+			// True if last work thrown an exception in parameter transfer,
+			// worker procedure or return value transfer
+			XYO_MULTITHREADING_EXPORT bool hasFailed();
 
-			inline void activeDestructor() {
-				endWork();
-			};
+			// Reset to new state when memory is recycled
+			XYO_MULTITHREADING_EXPORT void activeDestructor();
 	};
 
 	template <typename ReturnT,
