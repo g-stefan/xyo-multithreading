@@ -1,6 +1,5 @@
 {
 	"solution": {
-		"namespace" : "xyo",
 		"name" : "xyo-multithreading",
 		"type" : "xyo-cpp",
 		"projects": [
